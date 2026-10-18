@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sherif Chat Pro</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui;background:#0f172a;color:#e2e8f0;height:100vh;display:flex;flex-direction:column}
+header{background:#1e293b;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0ea5e9}
+header h1{font-size:14px}
+#status{font-size:10px;padding:5px 10px;border-radius:20px;color:white;font-weight:bold}
+#modeBar{display:flex;gap:4px;padding:6px;background:#0f172a}
+.mode{flex:1;padding:8px;text-align:center;border-radius:8px;background:#1e293b;font-size:12px;cursor:pointer;border:1px solid transparent}
+.mode.active{background:#0ea5e9;border-color:#0ea5e9}
+#nameBar,#onBar,#offBar{display:flex;gap:4px;padding:6px;background:#1e293b}
+#nameBar input,#onBar input{flex:1;min-width:0;padding:9px;border-radius:20px;border:none;background:#334155;color:white;text-align:center;font-size:13px}
+#nameBar button,#onBar button,#offBar button{padding:9px 12px;border-radius:20px;border:none;color:white;font-weight:bold;cursor:pointer;font-size:12px}
+#peers{padding:5px 10px;font-size:11px;color:#94a3b8;background:#0f172a;display:flex;justify-content:space-between}
+#tabs{display:flex;gap:4px;padding:4px;background:#0f172a}
+.tab{flex:1;padding:8px;text-align:center;background:#1e293b;border-radius:8px;cursor:pointer;font-size:12px;border:1px solid #334155}
+.tab.active{background:#0ea5e9;color:white;border-color:#0ea5e9}
+#messages{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:#0b1220}
+.msg{padding:10px 12px;border-radius:14px;max-width:82%;font-size:13px;word-break:break-word}
+.msg.me{background:linear-gradient(135deg,#0ea5e9,#6366f1);align-self:flex-end;color:white;border-bottom-right-radius:4px}
+.msg.other{background:#1e293b;align-self:flex-start;border-bottom-left-radius:4px}
+.msg img{max-width:200px;border-radius:10px;margin-top:6px;display:block;cursor:pointer}
+.msg small{display:block;font-size:9px;opacity:.7;margin-top:4px}
+#inputBar{display:flex;gap:4px;padding:7px;background:#1e293b;align-items:center}
+#inputBar input[type=text]{flex:1;padding:11px;border-radius:20px;border:none;background:#334155;color:white;outline:none;font-size:14px;min-width:0}
+.iconBtn{width:38px;height:38px;border-radius:50%;border:none;background:#334155;color:white;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.iconBtn.send{background:#0ea5e9}
+#emojiPanel{display:none;grid-template-columns:repeat(8,1fr);gap:2px;padding:6px;background:#1e293b;max-height:120px;overflow-y:auto}
+#emojiPanel.show{display:grid}
+#emojiPanel span{font-size:20px;padding:6px;text-align:center;cursor:pointer}
+#privateList{display:none;padding:6px;background:#1e293b;gap:4px;overflow-x:auto}
+#privateList.show{display:flex}
+.peerChip{padding:6px 10px;background:#334155;border-radius:20px;font-size:11px;cursor:pointer;white-space:nowrap;border:1px solid transparent}
+.peerChip.active{background:#0ea5e9;border-color:white}
+#callUI{display:none;position:fixed;inset:0;background:#000;z-index:9999;flex-direction:column}
+#callUI.show{display:flex}
+#callUI .videos{flex:1;position:relative;display:flex;flex-direction:column}
+#callUI video#remoteVideo{flex:1;background:#111;object-fit:cover}
+#callUI video#localVideo{position:absolute;bottom:90px;right:12px;width:100px;height:140px;background:#222;border-radius:10px;border:2px solid #0ea5e9;object-fit:cover;z-index:2}
+#callUI .ctrls{display:flex;gap:14px;justify-content:center;padding:18px;background:#1e293b}
+.ctrl{width:52px;height:52px;border-radius:50%;border:none;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.ctrl.end{background:#ef4444;color:white}
+.ctrl.mute{background:#334155;color:white}
+#incomingCall{display:none;position:fixed;top:10px;left:10px;right:10px;background:#1e293b;border:2px solid #0ea5e9;border-radius:14px;padding:12px;z-index:9998;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#incomingCall.show{display:block}
+#debug{padding:4px 10px;background:#1e293b;font-size:9px;color:#fbbf24;border-top:1px solid #334155;max-height:50px;overflow-y:auto}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:10px;text-align:center}
+.modal.show{display:flex}
+.modal h2{font-size:16px}
+.modal p{font-size:12px;color:#cbd5e1;max-width:340px}
+.modal button{padding:12px 18px;border-radius:20px;border:none;background:#0ea5e9;color:white;font-weight:bold;font-size:14px;margin:4px}
+#qrImg{width:min(88vw,55vh);image-rendering:pixelated;background:#fff;border-radius:8px}
+#scanUI{z-index:10001;padding:0;justify-content:flex-start}
+#scanVideo{width:100%;flex:1;object-fit:cover;min-height:0}
+#imgViewer{z-index:10002}
+#imgViewer img{max-width:100%;max-height:100%}
+</style>
+</head>
+<body>
+
+<header>
+<div><h1>💬 Sherif Chat Pro</h1><div style="font-size:9px;color:#94a3b8" id="myIdShow">ID: ...</div></div>
+<div id="status" style="background:#6b7280">● غير متصل</div>
+</header>
+
+<div id="modeBar">
+<div class="mode active" data-mode="online" onclick="setMode('online')">🌐 بنت (غرفة)</div>
+<div class="mode" data-mode="offline" onclick="setMode('offline')">📶 بدون نت (QR)</div>
+</div>
+
+<div id="nameBar">
+<input id="nameInput" placeholder="اسمك" maxlength="20">
+<button onclick="startCall(false)" style="background:#16a34a">📞</button>
+<button onclick="startCall(true)" style="background:#8b5cf6">🎥</button>
+</div>
+
+<div id="onBar">
+<input id="roomInput" placeholder="اسم الغرفة">
+<input id="passInput" type="password" placeholder="🔑 كلمة السر (8+)" autocomplete="off" dir="ltr">
+<button onclick="joinRoom()" style="background:#0ea5e9">دخول</button>
+</div>
+
+<div id="offBar" style="display:none">
+<button onclick="offCreate()" style="background:#0ea5e9;flex:1">➕ إنشاء اتصال</button>
+<button onclick="offJoin()" style="background:#16a34a;flex:1">📷 انضمام (مسح كود)</button>
+</div>
+
+<div id="peers"><span id="peersText">👥 1 (انت)</span><span id="netType">🌐 بنت</span></div>
+
+<div id="tabs">
+<div class="tab active" data-tab="group" onclick="switchTab('group')">👥 جماعي</div>
+<div class="tab" data-tab="private" onclick="switchTab('private')">🔒 فردي</div>
+</div>
+
+<div id="privateList"></div>
+<div id="messages"></div>
+
+<div id="incomingCall">
+<div style="display:flex;justify-content:space-between;align-items:center">
+<div><div id="callerName" style="font-weight:bold">📞 مكالمة...</div><div id="callerType" style="font-size:11px;color:#94a3b8">...</div></div>
+<div style="display:flex;gap:10px">
+<button onclick="acceptCall()" style="width:46px;height:46px;border-radius:50%;border:none;background:#16a34a;color:white;font-size:18px">📞</button>
+<button onclick="rejectCall()" style="width:46px;height:46px;border-radius:50%;border:none;background:#ef4444;color:white">✕</button>
+</div>
+</div>
+</div>
+
+<div id="emojiPanel">
+<span onclick="addEmoji('😂')">😂</span><span onclick="addEmoji('❤️')">❤️</span><span onclick="addEmoji('🔥')">🔥</span><span onclick="addEmoji('👍')">👍</span><span onclick="addEmoji('😍')">😍</span><span onclick="addEmoji('🥺')">🥺</span><span onclick="addEmoji('😭')">😭</span><span onclick="addEmoji('🙏')">🙏</span><span onclick="addEmoji('😅')">😅</span><span onclick="addEmoji('😎')">😎</span><span onclick="addEmoji('👏')">👏</span><span onclick="addEmoji('✨')">✨</span><span onclick="addEmoji('🎉')">🎉</span><span onclick="addEmoji('😳')">😳</span><span onclick="addEmoji('🤔')">🤔</span><span onclick="addEmoji('💀')">💀</span>
+</div>
+
+<div id="inputBar">
+<button class="iconBtn" onclick="toggleEmoji()">😊</button>
+<button class="iconBtn" onclick="document.getElementById('imgInput').click()">🖼️</button>
+<input type="file" id="imgInput" accept="image/*" style="display:none">
+<input type="text" id="txt" placeholder="اكتب رسالة...">
+<button class="iconBtn send" onclick="sendMsg()">➤</button>
+</div>
+
+<div id="debug">🔒 اكتب اسمك واسم الغرفة وكلمة السر ثم دخول. لو مفيش نت اختار "بدون نت".</div>
+
+<div id="callUI">
+<div class="videos">
+<video id="remoteVideo" autoplay playsinline></video>
+<video id="localVideo" autoplay muted playsinline></video>
+<div style="position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none">
+<div id="callWith" style="background:rgba(0,0,0,.6);padding:6px 10px;border-radius:20px;font-size:12px">مكالمة...</div>
+<div id="callTimer" style="background:rgba(0,0,0,.6);padding:6px 10px;border-radius:20px;font-size:12px">00:00</div>
+</div>
+</div>
+<div class="ctrls">
+<button class="ctrl mute" onclick="toggleMute()" id="muteBtn">🎤</button>
+<button class="ctrl end" onclick="endCall()">✕</button>
+<button class="ctrl mute" onclick="toggleVideo()" id="videoBtn">🎥</button>
+</div>
+</div>
+
+<div id="qrModal" class="modal">
+<h2 id="qrTitle"></h2>
+<img id="qrImg" alt="QR">
+<p id="qrHint"></p>
+<div id="qrBtns"></div>
+</div>
+
+<div id="scanUI" class="modal">
+<video id="scanVideo" playsinline muted></video>
+<p style="padding:8px">وجّه الكاميرا على الكود</p>
+<button onclick="stopScan()" style="margin-bottom:16px">إلغاء</button>
+</div>
+
+<div id="imgViewer" class="modal" onclick="this.classList.remove('show')"><img id="viewerImg" alt=""></div>
+
+<script>
+// ===== تحميل المكتبات: من التطبيق (محلي) وإلا من الإنترنت =====
+function loadLib(local,cdn){
+  const s=document.createElement('script');
+  s.src=local;
+  s.onerror=()=>{ const c=document.createElement('script'); c.src=cdn; document.head.appendChild(c); };
+  document.head.appendChild(s);
+}
+loadLib('lib/peerjs.min.js','https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js');
+loadLib('lib/jsQR.js','https://unpkg.com/jsqr@1.4.0/dist/jsQR.js');
+loadLib('lib/qrcode.js','https://unpkg.com/qrcode-generator@1.4.4/qrcode.js');
+</script>
+
+<script>
+let peer=null, peerErrHandler=null;
+let myId='', myName='مستخدم', currentRoom='', currentMode='online', currentTab='group', selectedPrivatePeer=null;
+let messages={group:[], private:{}};
+let connections={}, links={}, peersInfo={};
+let isHost=false, roomHostId='';
+let localStream=null, currentCall=null, incomingCall=null, callTimerInt=null, isMuted=false, isVideoOff=false, pendingLink=null;
+
+const $=id=>document.getElementById(id);
+const RTC_CFG={iceServers:[
+  {urls:'stun:stun.l.google.com:19302'},
+  {urls:'stun:stun1.l.google.com:19302'},
+  {urls:'turn:openrelay.metered.ca:80',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443',username:'openrelayproject',credential:'openrelayproject'},
+  {urls:'turn:openrelay.metered.ca:443?transport=tcp',username:'openrelayproject',credential:'openrelayproject'}
+]};
+
+// ============ Crypto ============
+const enc=new TextEncoder(), dec=new TextDecoder();
+let roomKey=null, myKeyPair=null, myPubB64='', peerKeys={}, authed={}, seen=new Set();
+function b64e(buf){ const u=new Uint8Array(buf); let s=''; for(let i=0;i<u.length;i+=0x8000) s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000)); return btoa(s); }
+function b64d(s){ const b=atob(s), u=new Uint8Array(b.length); for(let i=0;i<b.length;i++) u[i]=b.charCodeAt(i); return u; }
+const rid=()=>b64e(crypto.getRandomValues(new Uint8Array(9)));
+const hex=u=>Array.from(new Uint8Array(u)).map(b=>b.toString(16).padStart(2,'0')).join('');
+async function deriveRoom(room,pass){
+  const base=await crypto.subtle.importKey('raw',enc.encode(pass),'PBKDF2',false,['deriveKey','deriveBits']);
+  roomKey=await crypto.subtle.deriveKey({name:'PBKDF2',salt:enc.encode('sc1-key:'+room),iterations:250000,hash:'SHA-256'},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode('sc1-id:'+room),iterations:250000,hash:'SHA-256'},base,128);
+  return hex(bits);
+}
+async function seal(key,obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,enc.encode(JSON.stringify(obj)));
+  return {iv:b64e(iv),ct:b64e(ct)};
+}
+async function unseal(key,p){
+  const pt=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64d(p.iv)},key,b64d(p.ct));
+  return JSON.parse(dec.decode(pt));
+}
+async function initKeys(){
+  myKeyPair=await crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},false,['deriveKey']);
+  myPubB64=b64e(await crypto.subtle.exportKey('raw',myKeyPair.publicKey));
+}
+async function pairKey(pid){
+  const info=peersInfo[pid];
+  if(!info||!info.pub) throw new Error('no key');
+  if(peerKeys[pid]&&peerKeys[pid].pub===info.pub) return peerKeys[pid].aes;
+  const pub=await crypto.subtle.importKey('raw',b64d(info.pub),{name:'ECDH',namedCurve:'P-256'},false,[]);
+  const aes=await crypto.subtle.deriveKey({name:'ECDH',public:pub},myKeyPair.privateKey,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  peerKeys[pid]={pub:info.pub,aes};
+  return aes;
+}
+async function safetyCode(pid){
+  const a=peersInfo[myId]&&peersInfo[myId].pub, b=peersInfo[pid]&&peersInfo[pid].pub;
+  if(!a||!b) return '';
+  const h=new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode([a,b].sort().join('|'))));
+  const n=[]; for(let i=0;i<6;i++) n.push(String(((h[i*2]<<8)|h[i*2+1])%1000).padStart(3,'0'));
+  return n.join(' ');
+}
+
+// ============ Utils ============
+function log(t){ $('debug').textContent=new Date().toLocaleTimeString()+' - '+t; console.log(t); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function updateStatus(text,color){ const s=$('status'); s.textContent=text; s.style.background=color; }
+function genId(){ return 'sherif-'+Math.random().toString(36).slice(2,7)+'-'+Date.now().toString().slice(-4); }
+function nowTime(){ return new Date().toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}); }
+function getName(){ return ($('nameInput').value.trim()||'مستخدم').slice(0,20); }
+function updateNetType(){ $('netType').textContent=currentMode==='offline'?'📶 بدون نت':'🌐 بنت'; }
+window.viewImg=src=>{ $('viewerImg').src=src; $('imgViewer').classList.add('show'); };
+
+// ============ Ring ============
+let ringTimer=null, actx=null;
+function ringStart(){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    if(actx.state==='suspended') actx.resume();
+    const beep=()=>{
+      const o=actx.createOscillator(), g=actx.createGain();
+      o.frequency.value=880; g.gain.value=0.2; o.connect(g); g.connect(actx.destination);
+      o.start(); o.stop(actx.currentTime+0.4);
+      if(navigator.vibrate) navigator.vibrate(400);
+    };
+    beep(); ringTimer=setInterval(beep,1500);
+    setTimeout(ringStop,25000);
+  }catch{}
+}
+function ringStop(){ if(ringTimer){ clearInterval(ringTimer); ringTimer=null; } }
+
+// ============ Mode / session ============
+function resetSession(){
+  if(currentCall||localStream) endCall(false);
+  clearIncoming();
+  try{ if(peer) peer.destroy(); }catch{} peer=null; peerErrHandler=null;
+  Object.values(links).forEach(L=>{ L.dropped=true; try{L.pc.close()}catch{} });
+  if(pendingLink){ try{pendingLink.pc.close()}catch{} pendingLink=null; }
+  links={}; connections={}; peersInfo={}; authed={}; peerKeys={}; seen=new Set();
+  isHost=false; roomKey=null; selectedPrivatePeer=null; myId='';
+  messages={group:[], private:{}};
+  closeQR(); stopScan();
+  updateStatus('● غير متصل','#6b7280');
+  updatePeers(); render();
+}
+function applyModeUI(){
+  const off=currentMode==='offline';
+  $('onBar').style.display=off?'none':'flex';
+  $('offBar').style.display=off?'flex':'none';
+  if(off){
+    myId=genId(); myName=getName();
+    peersInfo={}; peersInfo[myId]={name:myName};
+    $('myIdShow').textContent='ID: '+myId.slice(0,14);
+    updateStatus('● بدون نت - جاهز','#0ea5e9');
+    log('اضغط "إنشاء اتصال" على جهاز، و"انضمام" على الجهاز التاني (لازم على نفس الواي فاي/الهوت سبوت)');
+    updatePeers();
+  } else {
+    $('myIdShow').textContent='ID: ...';
+    log('اكتب اسم الغرفة وكلمة السر ثم دخول');
+  }
+  updateNetType();
+}
+window.setMode=m=>{
+  currentMode=m;
+  document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('active',x.dataset.mode===m));
+  resetSession(); applyModeUI();
+};
+
+// ============ Online (PeerJS) ============
+function createPeer(id, onOpen){
+  if(typeof Peer==='undefined'){ alert('مكتبة PeerJS لسه ما اتحملتش، جرب تاني'); return; }
+  if(peer){ try{peer.destroy()}catch{} }
+  connections={};
+  peer=new Peer(id||undefined,{debug:1,config:RTC_CFG});
+  peer.on('open', pid=>{
+    myId=pid;
+    $('myIdShow').textContent='ID: '+myId.slice(0,16);
+    onOpen&&onOpen();
+  });
+  peer.on('connection', conn=>{
+    log('اتصال جديد من '+conn.peer.slice(0,10));
+    wire(conn);
+    setTimeout(()=>{ if(isHost && !authed[conn.peer]){ try{conn.close()}catch{} } },6000);
+  });
+  peer.on('call', onIncomingCall);
+  peer.on('error', err=>{ if(peerErrHandler) peerErrHandler(err); else log('Peer error: '+err.type); });
+  peer.on('disconnected', ()=>{ try{peer.reconnect()}catch{} });
+}
+
+function wire(conn, onOpen){
+  const pid=conn.peer;
+  conn.on('data', d=>handleData(d,pid,conn));
+  conn.on('close', ()=>dropPeer(pid));
+  conn.on('error', e=>log('خطأ اتصال: '+e));
+  const opened=()=>{ connections[pid]=conn; onOpen&&onOpen(); };
+  if(conn.open) opened(); else conn.on('open', opened);
+}
+
+function dropPeer(pid){
+  delete connections[pid]; delete peersInfo[pid]; delete authed[pid]; delete peerKeys[pid];
+  updatePeers();
+  if(isHost) broadcast({type:'peer-left', peer:pid});
+  else if(pid===roomHostId){ updateStatus('● الـ Host قطع','#ef4444'); log('الـ Host قطع - اضغط دخول تاني'); }
+}
+
+async function sendTo(conn,obj){
+  if(!conn||!conn.open||!roomKey) return;
+  try{ conn.send({e:await seal(roomKey,obj)}); }catch(e){ log('فشل ارسال'); }
+}
+async function broadcast(obj, exclude=null){
+  for(const c of Object.values(connections)){
+    if(c.peer===exclude) continue;
+    if(isHost && !authed[c.peer]) continue;
+    await sendTo(c,obj);
+  }
+}
+function relayRaw(pkt, exclude){
+  Object.values(connections).forEach(c=>{
+    if(c.peer!==exclude && c.open && authed[c.peer]){ try{c.send(pkt)}catch{} }
+  });
+}
+
+async function handleData(pkt, from, conn){
+  if(!pkt||!pkt.e||!roomKey) return;
+  let data;
+  try{ data=await unseal(roomKey,pkt.e); }
+  catch{ log('🚫 رسالة مرفوضة (كلمة سر غلط أو تلاعب)'); if(isHost){ try{conn.close()}catch{} } return; }
+  if(!data||typeof data!=='object') return;
+  if(data.id){ if(seen.has(data.id)) return; seen.add(data.id); if(seen.size>3000) seen.clear(); }
+
+  if(data.type==='hello'){
+    if(!isHost||typeof data.pub!=='string') return;
+    authed[from]=true;
+    const name=String(data.name||'').slice(0,20)||from.slice(0,8);
+    peersInfo[from]={name,pub:data.pub};
+    await sendTo(conn,{type:'peers-list',peers:peersInfo});
+    await broadcast({type:'peer-joined',peer:from,name,pub:data.pub},from);
+    messages.group.push({type:'chat',text:'✅ '+name+' دخل',from:'system'});
+    updatePeers(); render();
+    return;
+  }
+  if(isHost && !authed[from]) return;
+
+  if(data.type==='peers-list' && !isHost){
+    peersInfo=data.peers||{};
+    peersInfo[myId]={name:myName,pub:myPubB64};
+    updatePeers();
+  } else if(data.type==='peer-joined' && !isHost){
+    peersInfo[data.peer]={name:String(data.name||'').slice(0,20),pub:data.pub};
+    messages.group.push({type:'chat',text:'✅ '+peersInfo[data.peer].name+' دخل',from:'system'});
+    updatePeers(); render();
+  } else if(data.type==='peer-left' && !isHost){
+    delete peersInfo[data.peer]; delete peerKeys[data.peer];
+    updatePeers();
+  } else if(data.type==='chat'){
+    if(isHost){
+      if(data.from!==from) return;
+      if(data.isPrivate){
+        if(data.to!==myId){
+          const c=connections[data.to];
+          if(c&&c.open&&authed[data.to]) c.send(pkt);
+          return;
+        }
+      } else relayRaw(pkt,from);
+    }
+    if(data.isPrivate){
+      try{
+        const inner=await unseal(await pairKey(data.from),data.body);
+        const msg={type:'chat',from:data.from,fromName:String(inner.fromName||'').slice(0,20),text:String(inner.text||''),time:inner.time||nowTime(),isPrivate:true};
+        (messages.private[data.from]=messages.private[data.from]||[]).push(msg);
+      }catch(e){ log('🚫 فشل فك رسالة فردية'); return; }
+    } else messages.group.push(data);
+    render();
+  }
+}
+
+window.joinRoom=async()=>{
+  const room=$('roomInput').value.trim();
+  const pass=$('passInput').value;
+  if(!room){ alert('اكتب اسم الغرفة'); return; }
+  if(pass.length<8){ alert('كلمة السر لازم تكون 8 حروف أو أرقام على الأقل'); return; }
+  if(!(window.crypto&&crypto.subtle)){ alert('التشفير محتاج صفحة آمنة'); return; }
+  myName=getName();
+  currentRoom=room;
+  updateStatus('● بجهز التشفير...','#6b7280');
+  try{ roomHostId='sr-'+(await deriveRoom(room,pass)); await initKeys(); }
+  catch(e){ alert('فشل التشفير: '+e.message); return; }
+  isHost=false; peersInfo={}; authed={}; peerKeys={}; messages.group=[]; messages.private={};
+  updateStatus('● بيتصل...','#6b7280');
+  createPeer(genId(), ()=>{
+    peersInfo[myId]={name:myName,pub:myPubB64};
+    let done=false;
+    peerErrHandler=err=>{
+      if(err.type==='peer-unavailable' && !done){ done=true; becomeHost(); }
+      else { log('Peer error: '+err.type+' - لو مفيش نت استخدم "بدون نت"'); }
+    };
+    const conn=peer.connect(roomHostId,{reliable:true});
+    wire(conn, ()=>{
+      done=true; isHost=false;
+      sendTo(conn,{type:'hello',id:rid(),name:myName,pub:myPubB64});
+      updateStatus('● متصل 🔒','#16a34a');
+      updatePeers();
+    });
+    setTimeout(()=>{ if(!done){ done=true; becomeHost(); } }, 4000);
+  });
+};
+
+function becomeHost(){
+  log('مفيش Host - هتبقى Host');
+  peerErrHandler=err=>{
+    if(err.type==='unavailable-id'){ log('Host اتعمل من حد تاني، بحاول ادخل'); setTimeout(joinRoom,800); }
+    else log('Peer error: '+err.type);
+  };
+  createPeer(roomHostId, ()=>{
+    isHost=true; authed={};
+    peersInfo={}; peersInfo[myId]={name:myName,pub:myPubB64};
+    updateStatus('● Host 🔒','#0ea5e9');
+    updatePeers();
+    messages.group.push({type:'chat',text:'🔒 الغرفة مشفرة. ابعت اسم الغرفة وكلمة السر لصحابك',from:'system'});
+    render();
+  });
+}
+
+// ============ Offline (QR / WebRTC مباشر) ============
+async function pack(obj){
+  let bytes=enc.encode(JSON.stringify(obj)), tag='R';
+  if(window.CompressionStream){
+    const cs=new CompressionStream('deflate-raw'), w=cs.writable.getWriter();
+    w.write(bytes); w.close();
+    bytes=new Uint8Array(await new Response(cs.readable).arrayBuffer()); tag='Z';
+  }
+  return 'SC1'+tag+b64e(bytes).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+async function unpack(t){
+  t=String(t).trim();
+  if(!t.startsWith('SC1')) throw new Error('مش كود التطبيق');
+  const tag=t[3]; let s=t.slice(4).replace(/-/g,'+').replace(/_/g,'/');
+  while(s.length%4) s+='=';
+  let bytes=b64d(s);
+  if(tag==='Z'){
+    const ds=new DecompressionStream('deflate-raw'), w=ds.writable.getWriter();
+    w.write(bytes); w.close();
+    bytes=new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  }
+  return JSON.parse(dec.decode(bytes));
+}
+function filterSdp(sdp){
+  const lines=sdp.split(/\r?\n/).filter(Boolean);
+  const out=lines.filter(l=>!(l.startsWith('a=candidate:') && (l.split(' ')[4]||'').includes(':')));
+  return (out.some(l=>l.startsWith('a=candidate:'))?out:lines).join('\r\n')+'\r\n';
+}
+function gathered(pc){
+  return new Promise(res=>{
+    if(pc.iceGatheringState==='complete') return res();
+    const t=setTimeout(res,4000);
+    pc.addEventListener('icegatheringstatechange',()=>{ if(pc.iceGatheringState==='complete'){ clearTimeout(t); res(); } });
+  });
+}
+async function holdMic(){ try{ return await navigator.mediaDevices.getUserMedia({audio:true}); }catch{ return null; } }
+
+function newLink(){
+  const pc=new RTCPeerConnection({iceServers:[]});
+  const L={pc,dc:null,peerId:null,dropped:false};
+  pc.onconnectionstatechange=()=>{
+    log('اتصال مباشر: '+pc.connectionState);
+    if(pc.connectionState==='failed'||pc.connectionState==='closed') dropLink(L);
+    else if(pc.connectionState==='disconnected') setTimeout(()=>{ if(pc.connectionState==='disconnected') dropLink(L); },8000);
+  };
+  pc.ontrack=e=>{
+    const rv=$('remoteVideo');
+    rv.srcObject=e.streams[0]||new MediaStream([e.track]);
+    rv.play().catch(()=>{});
+  };
+  return L;
+}
+function bindDC(L,dc){
+  L.dc=dc;
+  dc.onopen=()=>sendL(L,{type:'hello',id:myId,name:myName});
+  dc.onmessage=e=>{ try{ onOffData(JSON.parse(e.data),L); }catch(err){ log('رسالة تالفة'); } };
+  dc.onclose=()=>dropLink(L);
+  if(dc.readyState==='open') dc.onopen();
+}
+function sendL(L,obj){
+  if(L&&L.dc&&L.dc.readyState==='open'){ try{ L.dc.send(JSON.stringify(obj)); return true; }catch(e){ log('فشل إرسال'); } }
+  return false;
+}
+function dropLink(L){
+  if(L.dropped) return; L.dropped=true;
+  try{L.pc.close()}catch{}
+  if(L.peerId){
+    const name=(peersInfo[L.peerId]&&peersInfo[L.peerId].name)||'حد';
+    delete links[L.peerId]; delete peersInfo[L.peerId];
+    if(selectedPrivatePeer===L.peerId) selectedPrivatePeer=null;
+    if(currentCall&&currentCall.link===L) endCall(false);
+    messages.group.push({type:'chat',text:'❌ '+name+' خرج',from:'system'});
+    updatePeers(); render();
+  }
+}
+
+function onOffData(d,L){
+  if(!d||!d.type) return;
+  if(d.type==='hello'){
+    if(L.peerId) return;
+    L.peerId=String(d.id);
+    links[L.peerId]=L;
+    peersInfo[L.peerId]={name:String(d.name||'').slice(0,20)||'مستخدم'};
+    messages.group.push({type:'chat',text:'✅ '+peersInfo[L.peerId].name+' اتصل',from:'system'});
+    updateStatus('● متصل 🔒','#16a34a');
+    closeQR(); stopScan(); pendingLink=null;
+    updatePeers(); render();
+  } else if(d.type==='chat'){
+    if(d.id){ if(seen.has(d.id)) return; seen.add(d.id); if(seen.size>3000) seen.clear(); }
+    if(d.isPrivate){
+      if(d.to!==myId) return;
+      (messages.private[L.peerId]=messages.private[L.peerId]||[]).push(d);
+    } else {
+      messages.group.push(d);
+      Object.values(links).forEach(x=>{ if(x!==L) sendL(x,d); });
+    }
+    render();
+  } else if(d.type==='sdp'||d.type.startsWith('call-')){
+    offCallSignal(d,L);
+  }
+}
+
+function showQR(title,text,hint,buttons){
+  try{
+    const qr=qrcode(0,'L'); qr.addData(text,'Byte'); qr.make();
+    $('qrImg').src=qr.createDataURL(6,4);
+  }catch(e){ alert('مشكلة في إنشاء الكود: '+e.message); return; }
+  $('qrTitle').textContent=title; $('qrHint').textContent=hint;
+  const b=$('qrBtns'); b.innerHTML='';
+  buttons.forEach(x=>{ const el=document.createElement('button'); el.textContent=x.label; el.onclick=x.fn; b.appendChild(el); });
+  $('qrModal').classList.add('show');
+}
+function closeQR(){ $('qrModal').classList.remove('show'); }
+
+let scanStream=null, scanRAF=0;
+async function scanQR(cb){
+  if(typeof jsQR==='undefined'){ alert('مكتبة المسح لسه ما اتحملتش، جرب تاني'); return; }
+  try{ scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}); }
+  catch(e){ alert('محتاج إذن الكاميرا'); return; }
+  const v=$('scanVideo'); v.srcObject=scanStream;
+  try{ await v.play(); }catch{}
+  $('scanUI').classList.add('show');
+  const cv=document.createElement('canvas'), cx=cv.getContext('2d',{willReadFrequently:true});
+  const tick=()=>{
+    if(!scanStream) return;
+    if(v.videoWidth){
+      const k=Math.min(1,640/v.videoWidth);
+      cv.width=Math.round(v.videoWidth*k); cv.height=Math.round(v.videoHeight*k);
+      cx.drawImage(v,0,0,cv.width,cv.height);
+      const img=cx.getImageData(0,0,cv.width,cv.height);
+      const r=jsQR(img.data,cv.width,cv.height,{inversionAttempts:'dontInvert'});
+      if(r&&r.data){ stopScan(); cb(r.data); return; }
+    }
+    scanRAF=requestAnimationFrame(tick);
+  };
+  tick();
+}
+window.stopScan=()=>{
+  cancelAnimationFrame(scanRAF);
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; }
+  $('scanUI').classList.remove('show'); $('scanVideo').srcObject=null;
+};
+
+window.offCreate=async()=>{
+  myName=getName(); if(peersInfo[myId]) peersInfo[myId].name=myName;
+  log('بجهز الكود...');
+  const mic=await holdMic();
+  try{
+    const L=newLink();
+    bindDC(L,L.pc.createDataChannel('d'));
+    await L.pc.setLocalDescription(await L.pc.createOffer());
+    await gathered(L.pc);
+    const code=await pack({t:'offer',sdp:filterSdp(L.pc.localDescription.sdp)});
+    if(pendingLink){ try{pendingLink.pc.close()}catch{} }
+    pendingLink=L;
+    showQR('الخطوة 1',code,'خلي صاحبك يضغط "انضمام" ويمسح الكود ده، وبعدين اضغط "مسح الرد" وامسح الكود اللي هيظهر عنده.',
+      [{label:'📷 مسح الرد',fn:offScanAnswer},{label:'إغلاق',fn:closeQR}]);
+  }catch(e){ alert('فشل إنشاء الاتصال: '+e.message); }
+  finally{ if(mic) mic.getTracks().forEach(t=>t.stop()); }
+};
+function offScanAnswer(){
+  scanQR(async txt=>{
+    try{
+      const d=await unpack(txt);
+      if(d.t!=='answer'||!pendingLink) throw new Error('ده مش كود الرد');
+      await pendingLink.pc.setRemoteDescription({type:'answer',sdp:d.sdp});
+      closeQR(); log('بيتصل...');
+    }catch(e){ alert('الكود غلط: '+e.message); }
+  });
+}
+window.offJoin=()=>{
+  myName=getName(); if(peersInfo[myId]) peersInfo[myId].name=myName;
+  scanQR(async txt=>{
+    const mic=await holdMic();
+    try{
+      const d=await unpack(txt);
+      if(d.t!=='offer') throw new Error('ده مش كود الاتصال');
+      const L=newLink();
+      L.pc.ondatachannel=e=>bindDC(L,e.channel);
+      await L.pc.setRemoteDescription({type:'offer',sdp:d.sdp});
+      await L.pc.setLocalDescription(await L.pc.createAnswer());
+      await gathered(L.pc);
+      const code=await pack({t:'answer',sdp:filterSdp(L.pc.localDescription.sdp)});
+      pendingLink=L;
+      showQR('الخطوة 2',code,'خلي صاحبك يضغط "مسح الرد" ويمسح الكود ده.',[{label:'إغلاق',fn:closeQR}]);
+    }catch(e){ alert('الكود غلط أو مش من التطبيق: '+e.message); }
+    finally{ if(mic) mic.getTracks().forEach(t=>t.stop()); }
+  });
+};
+
+// ---- مكالمات بدون نت (عبر قناة البيانات) ----
+async function offStartCall(pid,video){
+  const L=links[pid];
+  if(!L){ alert('مش متصل بيه'); return; }
+  try{ localStream=await getMedia(video); }
+  catch(e){ if(e.message!=='insecure context') alert('محتاج إذن كاميرا/ميك: '+e.message); return; }
+  currentCall={offline:true,link:L,video,role:'caller'};
+  showCallUI(video,(peersInfo[pid]&&peersInfo[pid].name)||'');
+  sendL(L,{type:'call-req',video,name:myName});
+  log('بيرن...');
+}
+async function offCallSignal(d,L){
+  try{
+    if(d.type==='call-req'){
+      if(currentCall||incomingCall){ sendL(L,{type:'call-reject'}); return; }
+      incomingCall={offline:true,link:L,peer:L.peerId,metadata:{video:!!d.video,fromName:String(d.name||'').slice(0,20)}};
+      showIncoming(incomingCall);
+    } else if(d.type==='call-accept'){
+      if(!currentCall||currentCall.link!==L||currentCall.role!=='caller') return;
+      localStream.getTracks().forEach(t=>L.pc.addTrack(t,localStream));
+      await L.pc.setLocalDescription(await L.pc.createOffer());
+      sendL(L,{type:'sdp',desc:{type:'offer',sdp:L.pc.localDescription.sdp}});
+      startTimer();
+    } else if(d.type==='sdp'){
+      if(d.desc.type==='offer'){
+        await L.pc.setRemoteDescription(d.desc);
+        await L.pc.setLocalDescription(await L.pc.createAnswer());
+        sendL(L,{type:'sdp',desc:{type:'answer',sdp:L.pc.localDescription.sdp}});
+      } else await L.pc.setRemoteDescription(d.desc);
+    } else if(d.type==='call-reject'){
+      if(currentCall&&currentCall.link===L){ alert('المكالمة اترفضت'); endCall(false); }
+    } else if(d.type==='call-end'){
+      if(incomingCall&&incomingCall.link===L) clearIncoming();
+      if(currentCall&&currentCall.link===L) endCall(false);
+    }
+  }catch(e){ log('خطأ مكالمة: '+e.message); }
+}
+
+// ============ UI ============
+function updatePeers(){
+  const ids=Object.keys(peersInfo);
+  $('peersText').textContent=currentMode==='offline'
+    ? `👥 ${ids.length||1} متصل - اتصال مباشر`
+    : `👥 ${ids.length||1} متصل - ${isHost?'Host':'Client'} - غرفة: ${currentRoom}`;
+  const list=$('privateList'); list.innerHTML='';
+  ids.forEach(pid=>{
+    if(pid===myId) return;
+    const chip=document.createElement('div');
+    chip.className='peerChip '+(selectedPrivatePeer===pid?'active':'');
+    chip.textContent=peersInfo[pid].name||pid.slice(0,8);
+    chip.onclick=()=>{ selectedPrivatePeer=pid; switchTab('private'); updatePeers(); render(); };
+    list.appendChild(chip);
+  });
+}
+window.switchTab=t=>{
+  currentTab=t;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
+  $('privateList').classList.toggle('show',t==='private');
+  render();
+};
+
+function render(){
+  const box=$('messages'); box.innerHTML='';
+  let list;
+  if(currentTab==='group') list=messages.group;
+  else {
+    if(!selectedPrivatePeer){ box.innerHTML='<div style="text-align:center;color:#94a3b8;padding:20px;font-size:12px">اختار شخص من فوق للمحادثة الفردية<br>👆</div>'; return; }
+    list=messages.private[selectedPrivatePeer]||[];
+    const hdr=document.createElement('div');
+    hdr.style.cssText='text-align:center;font-size:11px;color:#22c55e;padding:4px';
+    box.appendChild(hdr);
+    safetyCode(selectedPrivatePeer).then(c=>{ if(c) hdr.textContent='🔐 مشفر بين الاتنين فقط - كود الأمان: '+c+' (قارنه مع صاحبك في مكالمة)'; });
+  }
+  list.forEach(m=>{
+    if(m.from==='system'){
+      const d=document.createElement('div');
+      d.style.cssText='text-align:center;font-size:11px;color:#94a3b8;padding:4px';
+      d.textContent=m.text; box.appendChild(d); return;
+    }
+    const isMe=m.from===myId;
+    const d=document.createElement('div');
+    d.className='msg '+(isMe?'me':'other');
+    let c='';
+    if(!isMe) c+=`<div style="font-size:10px;color:#0ea5e9;font-weight:bold">${esc(m.fromName||String(m.from).slice(0,8))}</div>`;
+    c+=esc(m.text);
+    if(m.image && /^data:image\//.test(m.image)) c+=`<img src="${m.image}" onclick="viewImg(this.src)">`;
+    d.innerHTML=`${c}<small>${esc(m.time)} ${isMe?'✓✓':''}</small>`;
+    box.appendChild(d);
+  });
+  box.scrollTop=box.scrollHeight;
+}
+
+async function deliver(data){
+  if(isHost){
+    if(data.isPrivate) await sendTo(connections[data.to],data);
+    else await broadcast(data);
+  } else await sendTo(connections[roomHostId],data);
+}
+async function sendGroup(data){
+  if(currentMode==='offline'){ seen.add(data.id); Object.values(links).forEach(L=>sendL(L,data)); }
+  else await deliver(data);
+}
+
+window.sendMsg=async()=>{
+  const input=$('txt');
+  const text=input.value.trim();
+  if(!text) return;
+  const priv=currentTab==='private';
+  if(priv && !selectedPrivatePeer){ alert('اختار شخص من فوق'); return; }
+  const time=nowTime();
+
+  if(currentMode==='offline'){
+    if(!Object.keys(links).length){ alert('مفيش حد متصل. اعمل اتصال بالـ QR الأول'); return; }
+    const data={type:'chat',id:rid(),text,time,from:myId,fromName:myName,isPrivate:priv,to:priv?selectedPrivatePeer:null};
+    seen.add(data.id);
+    if(priv){
+      if(!sendL(links[selectedPrivatePeer],data)) return;
+      (messages.private[selectedPrivatePeer]=messages.private[selectedPrivatePeer]||[]).push(data);
+    } else {
+      messages.group.push(data);
+      Object.values(links).forEach(L=>sendL(L,data));
+    }
+    input.value=''; render();
+    return;
+  }
+
+  if(!roomKey){ alert('ادخل الغرفة الأول'); return; }
+  let data;
+  if(priv){
+    try{
+      const body=await seal(await pairKey(selectedPrivatePeer),{text,time,fromName:myName});
+      data={type:'chat',id:rid(),isPrivate:true,from:myId,to:selectedPrivatePeer,body};
+    }catch(e){ alert('مفيش مفتاح تشفير للشخص ده'); return; }
+    (messages.private[selectedPrivatePeer]=messages.private[selectedPrivatePeer]||[]).push({type:'chat',text,time,from:myId,fromName:myName,isPrivate:true});
+  } else {
+    data={type:'chat',id:rid(),text,time,from:myId,fromName:myName,isPrivate:false};
+    messages.group.push(data);
+  }
+  input.value=''; render();
+  deliver(data);
+};
+
+function compressImage(file, cb){
+  const r=new FileReader();
+  r.onload=e=>{
+    const img=new Image();
+    img.onload=()=>{
+      const c=document.createElement('canvas'), max=640;
+      let w=img.width, h=img.height;
+      if(w>h){ if(w>max){ h*=max/w; w=max; } } else { if(h>max){ w*=max/h; h=max; } }
+      c.width=w; c.height=h;
+      c.getContext('2d').drawImage(img,0,0,w,h);
+      let q=0.6, out=c.toDataURL('image/jpeg',q);
+      while(out.length>150000 && q>0.25){ q-=0.1; out=c.toDataURL('image/jpeg',q); }
+      cb(out);
+    };
+    img.onerror=()=>cb(null);
+    img.src=e.target.result;
+  };
+  r.readAsDataURL(file);
+}
+$('imgInput').addEventListener('change', function(){
+  const f=this.files[0];
+  if(!f) return;
+  if(currentMode==='online' && !roomKey){ alert('ادخل الغرفة الأول'); this.value=''; return; }
+  if(currentMode==='offline' && !Object.keys(links).length){ alert('مفيش حد متصل'); this.value=''; return; }
+  compressImage(f, url=>{
+    if(!url){ alert('فشل ضغط الصورة'); return; }
+    const data={type:'chat',id:rid(),text:'📸 صورة',image:url,time:nowTime(),from:myId,fromName:myName,isPrivate:false,to:null};
+    messages.group.push(data); render(); sendGroup(data);
+  });
+  this.value='';
+});
+
+window.toggleEmoji=()=>$('emojiPanel').classList.toggle('show');
+window.addEmoji=e=>{ const t=$('txt'); t.value+=e; $('emojiPanel').classList.remove('show'); t.focus(); };
+$('txt').addEventListener('keydown', e=>{ if(e.key==='Enter') sendMsg(); });
+
+// ============ Calls ============
+function getMedia(video){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    alert('الكاميرا/الميك مش متاحين في المتصفح ده (لازم صفحة آمنة أو التطبيق).');
+    return Promise.reject(new Error('insecure context'));
+  }
+  return navigator.mediaDevices.getUserMedia({video, audio:true});
+}
+function showCallUI(video,name){
+  $('localVideo').srcObject=localStream;
+  $('localVideo').style.display=video?'block':'none';
+  $('callWith').textContent=(video?'🎥 ':'📞 ')+name;
+  $('callUI').classList.add('show');
+}
+
+window.startCall=async(video=false)=>{
+  if(currentCall){ alert('انت في مكالمة بالفعل'); return; }
+  const others=Object.keys(peersInfo).filter(p=>p!==myId);
+  const target=(currentTab==='private'&&selectedPrivatePeer)?selectedPrivatePeer:others[0];
+  if(!target){ alert('مفيش حد متصل'); return; }
+  if(currentMode==='offline') return offStartCall(target,video);
+  try{
+    log('بطلب مكالمة '+(video?'فيديو':'صوت'));
+    localStream=await getMedia(video);
+    showCallUI(video,(peersInfo[target]&&peersInfo[target].name)||target.slice(0,8));
+    const call=peer.call(target, localStream, {metadata:{video, fromName:myName}});
+    handleCall(call);
+    startTimer();
+  }catch(e){
+    log('فشل المكالمة: '+e.message);
+    if(localStream){ localStream.getTracks().forEach(t=>t.stop()); localStream=null; }
+    $('callUI').classList.remove('show');
+    if(e.message!=='insecure context') alert('محتاج إذن كاميرا/ميك: '+e.message);
+  }
+};
+
+function showIncoming(call){
+  const name=(call.metadata&&call.metadata.fromName)||(peersInfo[call.peer]&&peersInfo[call.peer].name)||call.peer.slice(0,10);
+  $('callerName').textContent='📞 '+name+' بيتصل';
+  $('callerType').textContent=(call.metadata&&call.metadata.video)?'مكالمة فيديو 🎥':'مكالمة صوت 📞';
+  $('incomingCall').classList.add('show');
+  ringStart();
+}
+function onIncomingCall(call){
+  if(currentCall || incomingCall || !peersInfo[call.peer]){ try{call.close()}catch{} return; }
+  incomingCall=call;
+  showIncoming(call);
+  call.on('close', ()=>{ if(incomingCall===call) clearIncoming(); });
+}
+function clearIncoming(){
+  $('incomingCall').classList.remove('show');
+  ringStop();
+  incomingCall=null;
+}
+
+function handleCall(call){
+  currentCall=call;
+  call.on('stream', s=>{ const rv=$('remoteVideo'); rv.srcObject=s; rv.play().catch(()=>{}); });
+  call.on('close', ()=>endCall(false));
+  call.on('error', e=>{ log('خطأ مكالمة: '+e); endCall(false); });
+}
+
+window.acceptCall=async()=>{
+  const call=incomingCall;
+  if(!call) return;
+  clearIncoming();
+  const video=!!(call.metadata&&call.metadata.video);
+  const name=(call.metadata&&call.metadata.fromName)||(peersInfo[call.peer]&&peersInfo[call.peer].name)||'';
+  try{
+    localStream=await getMedia(video);
+    if(call.offline){
+      const L=call.link;
+      localStream.getTracks().forEach(t=>L.pc.addTrack(t,localStream));
+      currentCall={offline:true,link:L,video,role:'callee'};
+      showCallUI(video,name);
+      sendL(L,{type:'call-accept'});
+      startTimer();
+    } else {
+      showCallUI(video,name);
+      call.answer(localStream);
+      handleCall(call);
+      startTimer();
+    }
+  }catch(e){
+    if(call.offline) sendL(call.link,{type:'call-reject'}); else { try{call.close()}catch{} }
+    if(e.message!=='insecure context') alert('محتاج إذن: '+e.message);
+  }
+};
+window.rejectCall=()=>{
+  const c=incomingCall;
+  clearIncoming();
+  if(!c) return;
+  if(c.offline) sendL(c.link,{type:'call-reject'}); else { try{c.close()}catch{} }
+};
+
+function startTimer(){
+  let sec=0;
+  if(callTimerInt) clearInterval(callTimerInt);
+  $('callTimer').textContent='00:00';
+  callTimerInt=setInterval(()=>{
+    sec++;
+    $('callTimer').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0');
+  },1000);
+}
+
+window.endCall=(sig)=>{
+  if(callTimerInt){ clearInterval(callTimerInt); callTimerInt=null; }
+  $('callUI').classList.remove('show');
+  const c=currentCall; currentCall=null;
+  if(c){
+    if(c.offline){
+      if(sig!==false) sendL(c.link,{type:'call-end'});
+      try{ c.link.pc.getSenders().forEach(s=>{ if(s.track) c.link.pc.removeTrack(s); }); }catch{}
+    } else { try{c.close()}catch{} }
+  }
+  if(localStream) localStream.getTracks().forEach(t=>t.stop());
+  localStream=null; isMuted=false; isVideoOff=false;
+  $('muteBtn').textContent='🎤'; $('muteBtn').style.background='#334155';
+  $('videoBtn').textContent='🎥';
+  $('localVideo').srcObject=null; $('remoteVideo').srcObject=null;
+};
+
+window.toggleMute=()=>{
+  if(!localStream) return;
+  isMuted=!isMuted;
+  localStream.getAudioTracks().forEach(t=>t.enabled=!isMuted);
+  $('muteBtn').textContent=isMuted?'🔇':'🎤';
+  $('muteBtn').style.background=isMuted?'#ef4444':'#334155';
+};
+window.toggleVideo=()=>{
+  if(!localStream) return;
+  const vt=localStream.getVideoTracks()[0];
+  if(!vt) return;
+  isVideoOff=!isVideoOff;
+  vt.enabled=!isVideoOff;
+  $('videoBtn').textContent=isVideoOff?'📷':'🎥';
+};
+
+applyModeUI();
+</script>
+</body>
+</html>
